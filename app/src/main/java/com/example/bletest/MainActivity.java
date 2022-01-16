@@ -99,7 +99,9 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler;
     private final int SCAN_PERIOD = 10000;
 
+
     class MyScancallback extends ScanCallback {
+
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             Log.d("scanResult","start");
@@ -115,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Button button = findViewById(R.id.button_connect);
-                        button.setText("GETTING");
+                        button.setText("GET SERVICE");
                         button.setEnabled(true);
                     }
                 });
@@ -133,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
         public void onScanFailed(int errorCode) {
         }
     }
+
 
     class MyGattcallback extends BluetoothGattCallback{
         @Override
@@ -156,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //UARTサービスの確保
                     if( service.getUuid().toString().equals(UART_SERVICE) ) {
-                        Log.d("onServicesDiscovered","success - uart");
+                        Log.d("onServicesDiscovered","uart");
                         mUartService = service;
 
                         //Descriptorの記述 (Indicationを有効化)
@@ -178,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //温度計サービスの確保
                     if( service.getUuid().toString().equals(TEMP_SERVICE) ) {
-                        Log.d("onServicesDiscovered","success - temperature");
+                        Log.d("onServicesDiscovered","temperature");
                         mTempService = service;
 
                         runOnUiThread(new Runnable() {
@@ -193,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //加速度サービスの確保
                     if( service.getUuid().toString().equals(ACCEL_SERVICE) ) {
-                        Log.d("onServicesDiscovered","success - accel");
+                        Log.d("onServicesDiscovered","accel");
                         mAccelService = service;
 
                         runOnUiThread(new Runnable() {
@@ -208,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //磁力計サービスの確保
                     if( service.getUuid().toString().equals(MAGNET_SERVICE) ) {
-                        Log.d("onServicesDiscovered","success - magnetometer");
+                        Log.d("onServicesDiscovered","magnetometer");
                         mMagnetService = service;
 
                         runOnUiThread(new Runnable() {
@@ -225,13 +228,17 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        //readCharacteristic()が成功したときにコールされる
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-            readCharacteristicData(characteristic);
+            Log.d("onCharacteristic","read");
+            getCharacteristicData(characteristic);
         }
 
+        //writeCharacteristic()が成功したときにコールされる
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            Log.d("onCharacteristic","write");
             if( characteristic.getUuid().toString().equals(UART_RX) ){
 
                 runOnUiThread(new Runnable() {
@@ -244,13 +251,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        //Notifyを有効にすると、デバイスから周期的にセンサデータが通知され、通知の度にこのメソッドがコールされる
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             Log.d("onCharacteristic","change");
 
             if( characteristic.getUuid().toString().equals(UART_TX) ){
                 byte[] t = characteristic.getValue();
-                Log.d("length:::","::"+t.length);
                 final String str = new String(t);
 
                 runOnUiThread(new Runnable() {
@@ -263,15 +270,12 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
 
-            readCharacteristicData(characteristic);
+            getCharacteristicData(characteristic);
         }
     }
 
-    private void readCharacteristicData(BluetoothGattCharacteristic characteristic){
+    private void getCharacteristicData(BluetoothGattCharacteristic characteristic){
         if( characteristic.getUuid().toString().equals(TEMP_DATA) ){
-            byte[] t = characteristic.getValue();
-            Log.d("length:::","::"+t.length);
-            //Log.d("value:::",String.format("%x:%x:%x:%x:%x:%x",t[0],t[1],t[2],t[3],t[4],t[5]));
             final int temp = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT8,0);
 
             runOnUiThread(new Runnable() {
@@ -285,9 +289,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if( characteristic.getUuid().toString().equals(ACCEL_DATA) ){
-            byte[] t = characteristic.getValue();
-            Log.d("length:::","::"+t.length);
-            Log.d("value:::",String.format("%x:%x:%x:%x:%x:%x",t[0],t[1],t[2],t[3],t[4],t[5]));
             final int x = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16,0);
             final int y = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16,2);
             final int z = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16,4);
@@ -302,9 +303,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if( characteristic.getUuid().toString().equals(MAGNET_DATA) ){
-            byte[] t = characteristic.getValue();
-            Log.d("length:::","::"+t.length);
-            Log.d("value:::",String.format("%x:%x:%x:%x:%x:%x",t[0],t[1],t[2],t[3],t[4],t[5]));
             final int x = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16,0);
             final int y = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16,2);
             final int z = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_SINT16,4);
@@ -336,7 +334,7 @@ public class MainActivity extends AppCompatActivity {
             //スキャンの開始
             scanner.startScan(scancallback);
         }
-        else if (button.getText().equals("GETTING")) {
+        else if (button.getText().equals("GET SERVICE")) {
             if (device != null) {
                 gattCallback = new MyGattcallback();
                 device.connectGatt(this, false, gattCallback);
@@ -350,7 +348,7 @@ public class MainActivity extends AppCompatActivity {
                 mUartService = null;
                 mTempService = null;
                 mAccelService = null;
-                button.setText("GETTING");
+                button.setText("GET SERVICE");
 
                 Button serviceBtn = findViewById(R.id.button_uartSend);
                 serviceBtn.setEnabled(false);
@@ -359,6 +357,9 @@ public class MainActivity extends AppCompatActivity {
                 serviceBtn.setEnabled(false);
 
                 serviceBtn = findViewById(R.id.button_read_accel);
+                serviceBtn.setEnabled(false);
+
+                serviceBtn = findViewById(R.id.button_read_magnet);
                 serviceBtn.setEnabled(false);
 
             }

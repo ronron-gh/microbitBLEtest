@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BLEtest</string>
+    <string name="app_name">micro:bit BLE Test</string>
     <string name="button_A">A</string>
     <string name="button_B">B</string>
     <string name="button_connect">Connect</string>
